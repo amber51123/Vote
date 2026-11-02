@@ -104,8 +104,8 @@
         <div class="form-group">
             <label>請選擇餐廳：</label>
             <div class="radio-options">
-                <label><input type="radio" name="restaurant" value="白金花"> 1. 白金花</label>
-                <label><input type="radio" name="restaurant" value="豪鼎"> 2. 豪鼎</label>
+                <label><input type="radio" name="restaurant" value="白金花"> 白金花</label>
+                <label><input type="radio" name="restaurant" value="豪鼎"> 豪鼎</label>
             </div>
         </div>
         
