@@ -117,7 +117,7 @@
 
 <script>
     // ⚠️ 請把下面這行引號內的網址，換成你剛剛從 Google Apps Script 複製的「網頁應用程式網址」
-    const SCRIPT_URL = "YOUR_GOOGLE_SCRIPT_URL";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZwGyKFGv_izJLq7hUjQk5jiC0_v-1LVZRyLGn30WvbcKoRSSgs120fO42pjtWgSg7tQ/exec";
 
     function submitVote() {
         const name = document.getElementById('userName').value.trim();
