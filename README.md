@@ -1,9 +1,12 @@
-
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2027年夜飯投票</title>
+    <!-- 引入 Firebase 雲端資料庫 SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -103,8 +106,8 @@
         <div class="form-group">
             <label>請選擇餐廳：</label>
             <div class="radio-options">
-                <label><input type="radio" name="restaurant" value="白金花"> 白金花</label>
-                <label><input type="radio" name="restaurant" value="豪鼎"> 豪鼎</label>
+                <label><input type="radio" name="restaurant" value="白金花"> 1. 白金花</label>
+                <label><input type="radio" name="restaurant" value="豪鼎"> 2. 豪鼎</label>
             </div>
         </div>
         
@@ -121,7 +124,21 @@
 </div>
 
 <script>
-    // 模擬後端儲存（實際應用中可串接 Firebase 或後端資料庫）
+    // === 請在此處填入你免費申請的 Firebase 設定 ===
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // 初始化 Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
     function submitVote() {
         const name = document.getElementById('userName').value.trim();
         const selected = document.querySelector('input[name="restaurant"]:checked');
@@ -135,43 +152,56 @@
             return;
         }
 
-        // 讀取現有投票資料
-        let votes = JSON.parse(localStorage.getItem('votes_2027') || '{}');
-        
-        if (votes[name]) {
-            alert('您已經投過票囉！每人僅限投一次。');
-            return;
-        }
+        // 將名字中的特殊字元過濾（Firebase key 不支援某些符號）
+        const safeName = name.replace(/[.#$\/\[\]]/g, '_');
 
-        // 記錄投票
-        votes[name] = selected.value;
-        localStorage.setItem('votes_2027', JSON.stringify(votes));
+        // 檢查是否投過票
+        database.ref('votes/' + safeName).once('value', (snapshot) => {
+            if (snapshot.exists()) {
+                alert('您已經投過票囉！每人僅限投一次。');
+                return;
+            }
 
-        document.getElementById('resultMsg').innerText = '投票成功！感謝您的參與。';
-        document.getElementById('userName').disabled = true;
+            // 寫入雲端資料庫
+            database.ref('votes/' + safeName).set({
+                name: name,
+                choice: selected.value,
+                time: new Date().toLocaleString()
+            }, (error) => {
+                if (error) {
+                    alert('投票失敗，請稍後再試');
+                } else {
+                    document.getElementById('resultMsg').innerText = '投票成功！感謝您的參與。';
+                    document.getElementById('userName').disabled = true;
+                }
+            });
+        });
     }
 
     function showAdminResults() {
-        const password = prompt('請輸入建立者密碼（預設密碼請自行修改）：');
+        const password = prompt('請輸入建立者密碼：');
         if (password !== 'admin123') {
             alert('密碼錯誤！');
             return;
         }
 
-        let votes = JSON.parse(localStorage.getItem('votes_2027') || '{}');
-        let html = '<b>目前投票明細：</b><br><ul>';
-        let counts = { '白金花': 0, '豪鼎': 0 };
+        database.ref('votes').once('value', (snapshot) => {
+            let votes = snapshot.val() || {};
+            let html = '<b>目前雲端投票明細：</b><br><ul>';
+            let counts = { '白金花': 0, '豪鼎': 0 };
 
-        for (let user in votes) {
-            html += `<li>${user} 投給：<b>${votes[user]}</b></li>`;
-            if (counts[votes[user]] !== undefined) {
-                counts[votes[user]]++;
+            for (let key in votes) {
+                let v = votes[key];
+                html += `<li>${v.name} 投給：<b>${v.choice}</b></li>`;
+                if (counts[v.choice] !== undefined) {
+                    counts[v.choice]++;
+                }
             }
-        }
-        html += '</ul><hr>';
-        html += `<b>統計結果：</b><br>1. 白金花：${counts['白金花']} 票<br>2. 豪鼎：${counts['豪鼎']} 票`;
+            html += '</ul><hr>';
+            html += `<b>雲端統計結果：</b><br>1. 白金花：${counts['白金花']} 票<br>2. 豪鼎：${counts['豪鼎']} 票`;
 
-        document.getElementById('adminPanel').innerHTML = html;
+            document.getElementById('adminPanel').innerHTML = html;
+        });
     }
 </script>
 
